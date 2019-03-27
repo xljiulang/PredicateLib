@@ -1,36 +1,70 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace System
 {
     /// <summary>
-    /// 提供URL的解码功能
+    /// 提供Uri扩展
     /// </summary>
-    static class HttpUtility
-    {         
+    static class UriExtensions
+    {
+        /// <summary>
+        /// 获取Query参数值
+        /// </summary>
+        /// <param name="uri">Uri</param>
+        /// <param name="encoding">query字符串的编码</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <returns></returns>
+        public static IEnumerable<KeyValuePair<string, string>> GetQueryValues(this Uri uri, Encoding encoding)
+        {
+            if (uri == null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            if (encoding == null)
+            {
+                encoding = Encoding.UTF8;
+            }
+
+            if (string.IsNullOrEmpty(uri.Query))
+            {
+                yield break;
+            }
+
+            var query = uri.Query.TrimStart('?').Split('&');
+            foreach (var q in query)
+            {
+                var kv = q.Split('=');
+                if (kv.Length == 2)
+                {
+                    var key = UrlDecode(kv[0], encoding);
+                    var value = UrlDecode(kv[1], encoding);
+                    yield return new KeyValuePair<string, string>(key, value);
+                }
+            }
+        }
+
+
         /// <summary>
         /// Url解码
         /// </summary>
         /// <param name="str">字符串</param>
         /// <param name="encoding">编码</param>
         /// <returns></returns>
-        public static string UrlDecode(string str, Encoding encoding)
+        private static string UrlDecode(string str, Encoding encoding)
         {
             if (str == null)
             {
                 return null;
             }
 
-            int count = str.Length;
-            UrlDecoder helper = new UrlDecoder(count, encoding);
+            var count = str.Length;
+            var helper = new UrlDecoder(count, encoding);
 
-            // go through the string's chars collapsing %XX and %uXXXX and
-            // appending each char as char, with exception of %XX constructs
-            // that are appended as bytes
-
-            for (int pos = 0; pos < count; pos++)
+            for (var pos = 0; pos < count; pos++)
             {
-                char ch = str[pos];
-
+                var ch = str[pos];
                 if (ch == '+')
                 {
                     ch = ' ';
@@ -39,10 +73,10 @@ namespace System
                 {
                     if (str[pos + 1] == 'u' && pos < count - 5)
                     {
-                        int h1 = HttpUtility.HexToInt(str[pos + 2]);
-                        int h2 = HttpUtility.HexToInt(str[pos + 3]);
-                        int h3 = HttpUtility.HexToInt(str[pos + 4]);
-                        int h4 = HttpUtility.HexToInt(str[pos + 5]);
+                        var h1 = HexToInt(str[pos + 2]);
+                        var h2 = HexToInt(str[pos + 3]);
+                        var h3 = HexToInt(str[pos + 4]);
+                        var h4 = HexToInt(str[pos + 5]);
 
                         if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
                         {   // valid 4 hex chars
@@ -56,12 +90,12 @@ namespace System
                     }
                     else
                     {
-                        int h1 = HttpUtility.HexToInt(str[pos + 1]);
-                        int h2 = HttpUtility.HexToInt(str[pos + 2]);
+                        var h1 = HexToInt(str[pos + 1]);
+                        var h2 = HexToInt(str[pos + 2]);
 
                         if (h1 >= 0 && h2 >= 0)
                         {     // valid 2 hex chars
-                            byte b = (byte)((h1 << 4) | h2);
+                            var b = (byte)((h1 << 4) | h2);
                             pos += 2;
 
                             // don't add as char
@@ -91,11 +125,11 @@ namespace System
                 (h >= 'a' && h <= 'f') ? h - 'a' + 10 :
                 (h >= 'A' && h <= 'F') ? h - 'A' + 10 :
                 -1;
-        }    
+        }
 
         private class UrlDecoder
         {
-            private int _bufferSize;
+            private readonly int _bufferSize;
 
             // Accumulate characters in a special array
             private int _numChars;
@@ -123,33 +157,24 @@ namespace System
                 _encoding = encoding;
 
                 _charBuffer = new char[bufferSize];
-                // byte buffer created on demand
             }
 
             public void AddChar(char ch)
             {
                 if (_numBytes > 0)
+                {
                     FlushBytes();
-
+                }
                 _charBuffer[_numChars++] = ch;
             }
 
             public void AddByte(byte b)
             {
-                // if there are no pending bytes treat 7 bit bytes as characters
-                // this optimization is temp disable as it doesn't work for some encodings
-                /*
-                                if (_numBytes == 0 && ((b & 0x80) == 0)) {
-                                    AddChar((char)b);
-                                }
-                                else
-                */
+                if (_byteBuffer == null)
                 {
-                    if (_byteBuffer == null)
-                        _byteBuffer = new byte[_bufferSize];
-
-                    _byteBuffer[_numBytes++] = b;
+                    _byteBuffer = new byte[_bufferSize];
                 }
+                _byteBuffer[_numBytes++] = b;
             }
 
             public override string ToString()
@@ -161,11 +186,11 @@ namespace System
 
                 if (_numChars > 0)
                 {
-                    return new String(_charBuffer, 0, _numChars);
+                    return new string(_charBuffer, 0, _numChars);
                 }
                 else
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
             }
         }

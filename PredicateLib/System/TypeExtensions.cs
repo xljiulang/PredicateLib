@@ -5,8 +5,8 @@
     /// </summary>
     static class TypeExtensions
     {
-#if !NETSTANDARD1_3
 
+#if !NETSTANDARD1_3
         /// <summary>
         /// 返回type的详细类型
         /// </summary>

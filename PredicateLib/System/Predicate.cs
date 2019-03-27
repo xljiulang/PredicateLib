@@ -6,7 +6,7 @@ using System.Reflection;
 namespace System
 {
     /// <summary>
-    /// 提供条件表达式的生成
+    /// 提供谓词筛选表达式的生成
     /// </summary>
     public static class Predicate
     {
@@ -33,12 +33,12 @@ namespace System
                     where pLast.ParameterType.GetTypeInfo().IsGenericType == false
                     select m;
 
-            containsMethod = q.FirstOrDefault();
+            containsMethod = q.Single();
         }
 
 
         /// <summary>
-        /// 返回默认为True的条件
+        /// 返回默认为True的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
@@ -48,7 +48,7 @@ namespace System
         }
 
         /// <summary>
-        /// 返回默认为False的条件
+        /// 返回默认为False的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
@@ -58,11 +58,11 @@ namespace System
         }
 
         /// <summary>
-        /// 将数组转换为Or的相等表达式合集
+        /// 将数组转换为Or的相等的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <typeparam name="TKey">键类型</typeparam>
-        /// <param name="keySelector">键选择</param>
+        /// <typeparam name="TKey">属性类型</typeparam>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateOrEqualPredicate<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
@@ -75,11 +75,11 @@ namespace System
 
 
         /// <summary>
-        /// 将数组转换为Or的不等表达式合集
+        /// 将数组转换为Or的不等的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <typeparam name="TKey">键类型</typeparam>
-        /// <param name="keySelector">键选择</param>
+        /// <typeparam name="TKey">>属性类型</typeparam>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateOrNotEqualPredicate<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
@@ -91,11 +91,11 @@ namespace System
         }
 
         /// <summary>
-        /// 生成In操作的表示式
+        /// 生成In操作的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <typeparam name="TKey">键类型</typeparam>
-        /// <param name="keySelector">键选择</param>
+        /// <typeparam name="TKey">属性类型</typeparam>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateContainsPredicate<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
@@ -107,29 +107,29 @@ namespace System
         }
 
         /// <summary>
-        /// 生成表达式
+        /// 根据属性名生成谓词筛选表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">字段名</param>
+        /// <param name="propertyName">属性名</param>
         /// <param name="value">值</param>
         /// <param name="op">操作符</param>
         /// <exception cref="MissingFieldException"></exception>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> Create<T>(string fieldName, object value, Operator op)
+        public static Expression<Func<T, bool>> Create<T>(string propertyName, object value, Operator op)
         {
-            var member = typeof(T).GetProperty(fieldName, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
+            var member = typeof(T).GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
             if (member == null)
             {
-                throw new MissingFieldException(fieldName);
+                throw new MissingFieldException(propertyName);
             }
             return Create<T>(member, value, op);
         }
 
         /// <summary>
-        /// 生成表达式
+        /// 根据属性生成谓词筛选表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="member">成员</param>
+        /// <param name="member">属性成员</param>
         /// <param name="value">值</param>
         /// <param name="op">操作符</param>
         /// <exception cref="MissingFieldException"></exception>
@@ -142,11 +142,11 @@ namespace System
         }
 
         /// <summary>
-        /// 生成表达式
+        /// 根据属性生成谓词筛选表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <typeparam name="TKey"></typeparam>
-        /// <param name="keySelector">键选择</param>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="value">值</param>
         /// <param name="op">操作符</param>
         /// <returns></returns>
@@ -159,9 +159,9 @@ namespace System
         /// 生成表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="paramExp">参数</param>
-        /// <param name="memberExp">成员</param>
-        /// <param name="value">值</param>
+        /// <param name="paramExp">参数表达式</param>
+        /// <param name="memberExp">成员表达式</param>
+        /// <param name="value">属性值</param>
         /// <param name="op">操作符</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T>(ParameterExpression paramExp, MemberExpression memberExp, object value, Operator op)

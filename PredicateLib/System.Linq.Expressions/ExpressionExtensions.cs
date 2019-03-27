@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace System.Linq.Expressions
 {
     /// <summary>
-    /// Where条件扩展
-    /// 用于分步实现不确定条件个数的逻辑运算组织   
+    /// 谓词筛选表达式扩展
+    /// 用于分步实现不确定条件个数的谓词筛选表达式逻辑运算  
     /// </summary>
     public static class ExpressionExtensions
     {
@@ -48,13 +48,13 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="expLeft">表达式1</param>
-        /// <param name="fieldName">键2</param>
-        /// <param name="value">值</param>
+        /// <param name="propertyName">属性名称</param>
+        /// <param name="value">属性值</param>
         /// <param name="op">操作符</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expLeft, string fieldName, object value, Operator op)
+        public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expLeft, string propertyName, object value, Operator op)
         {
-            var expRight = Predicate.Create<T>(fieldName, value, op);
+            var expRight = Predicate.Create<T>(propertyName, value, op);
             return expLeft.And(expRight);
         }
 
@@ -62,9 +62,9 @@ namespace System.Linq.Expressions
         /// 与逻辑运算
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
-        /// <typeparam name="TKey">键类型</typeparam>
+        /// <typeparam name="TKey">属性类型</typeparam>
         /// <param name="expLeft">表达式1</param>
-        /// <param name="keySelector">键</param>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="value">值</param>
         /// <param name="op">操作符</param>
         /// <returns></returns>
@@ -79,7 +79,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="expLeft">表达式1</param>
-        /// <param name="keySelector">键选择</param>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="values">值</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> AndIn<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <param name="expLeft">表达式1</param>
-        /// <param name="keySelector">键选择</param>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="values">值</param>
         /// <returns></returns>
         public static Expression<Func<T, bool>> AndNotIn<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions
 
 
         /// <summary>
-        /// 表达式参数类型转换
+        /// 将表达式参数类型转换
         /// </summary>
         /// <typeparam name="TNew">新类型</typeparam>
         /// <param name="expression">表达式</param>

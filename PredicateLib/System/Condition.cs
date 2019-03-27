@@ -12,9 +12,9 @@ namespace System
     public class Condition<T>
     {
         /// <summary>
-        /// 查询条件
+        /// 查询条件的值
         /// </summary>
-        private readonly IDictionary<PropertyInfo, string> queryValues;
+        private readonly IDictionary<PropertyInfo, object> conditionValues;
 
         /// <summary>
         /// 忽略配置
@@ -35,30 +35,53 @@ namespace System
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="queryValues">查询条件值</param>
-        public Condition(IEnumerable<KeyValuePair<string, string>> queryValues)
+        /// <param name="conditionValues">查询条件值</param>
+        public Condition(IEnumerable<KeyValuePair<string, string>> conditionValues)
         {
-            this.queryValues = new Dictionary<PropertyInfo, string>();
-            if (queryValues == null)
+            this.conditionValues = CastConditionValues(conditionValues);
+        }
+
+        /// <summary>
+        /// 查询条件
+        /// </summary>
+        /// <param name="conditionValues">查询条件值</param>
+        public Condition(IEnumerable<KeyValuePair<string, object>> conditionValues)
+        {
+            this.conditionValues = CastConditionValues(conditionValues);
+        }
+
+        /// <summary>
+        /// 转换条件值
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="keyValues">条件值</param>
+        /// <returns></returns>
+        private static IDictionary<PropertyInfo, object> CastConditionValues<TValue>(IEnumerable<KeyValuePair<string, TValue>> keyValues)
+        {
+            var conditionValues = new Dictionary<PropertyInfo, object>();
+            if (keyValues == null)
             {
-                return;
+                return conditionValues;
             }
 
-            foreach (var query in queryValues)
+            foreach (var condition in keyValues)
             {
-                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(query.Key, StringComparison.OrdinalIgnoreCase));
+                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(condition.Key, StringComparison.OrdinalIgnoreCase));
                 if (member != null)
                 {
-                    this.queryValues.Add(member, query.Value);
+                    var castValue = ConvertToType(condition.Value, member.PropertyType);
+                    conditionValues.Add(member, castValue);
                 }
             }
+
+            return conditionValues;
         }
 
         /// <summary>
         /// 配置忽略的条件
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
-        /// <param name="keySelector">键</param>
+        /// <param name="keySelector">属性选择</param>
         /// <returns></returns>
         public Condition<T> IgnoreFor<TKey>(Expression<Func<T, TKey>> keySelector)
         {
@@ -71,7 +94,7 @@ namespace System
         /// 配置比较操作符
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
-        /// <param name="keySelector">键</param>
+        /// <param name="keySelector">属性选择</param>
         /// <param name="operator">操作符</param>
         /// <returns></returns>
         public Condition<T> OperatorFor<TKey>(Expression<Func<T, TKey>> keySelector, Operator @operator)
@@ -82,7 +105,7 @@ namespace System
         }
 
         /// <summary>
-        /// 转换为And连接的条件表达式
+        /// 转换为And连接的谓词筛选表达式
         /// </summary>
         /// <returns></returns>
         public Expression<Func<T, bool>> ToAndPredicate()
@@ -91,7 +114,7 @@ namespace System
         }
 
         /// <summary>
-        /// 转换为Or连接的条件表达式
+        /// 转换为Or连接的谓词筛选表达式
         /// </summary>
         /// <returns></returns>
         public Expression<Func<T, bool>> ToOrPredicate()
@@ -100,24 +123,23 @@ namespace System
         }
 
         /// <summary>
-        /// 转换为And Or连接的条件表达式
+        /// 转换为And Or连接的谓词筛选表达式
         /// </summary>
         /// <param name="and"></param>
         /// <returns></returns>
         private Expression<Func<T, bool>> ToPredicate(bool and)
         {
             var exp = default(Expression<Func<T, bool>>);
-            foreach (var query in this.queryValues)
+            foreach (var condition in this.conditionValues)
             {
-                var member = query.Key;
+                var member = condition.Key;
                 if (this.ignoreConfigs.Contains(member) == true)
                 {
                     continue;
                 }
 
-                var value = Convert(query.Value, member.PropertyType);
                 var op = this.GetOperator(member);
-                var expRight = Predicate.Create<T>(member, value, op);
+                var expRight = Predicate.Create<T>(member, condition.Value, op);
 
                 if (exp == null)
                 {
@@ -153,14 +175,14 @@ namespace System
         /// <param name="targetType">转换的目标类型</param>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
-        private static object Convert(string value, Type targetType)
+        private static object ConvertToType(object value, Type targetType)
         {
             if (value == null)
             {
                 return null;
             }
 
-            if (typeof(string) == targetType)
+            if (value.GetType() == targetType)
             {
                 return value;
             }
@@ -176,16 +198,17 @@ namespace System
                 return convertible.ToType(targetType, null);
             }
 
+            var valueString = value.ToString();
             if (targetType.GetTypeInfo().IsEnum == true)
             {
-                return Enum.Parse(targetType, value, true);
+                return Enum.Parse(targetType, valueString, true);
             }
 
             if (typeof(Guid) == targetType)
             {
-                return Guid.Parse(value);
+                return Guid.Parse(valueString);
             }
-           
+
             throw new NotSupportedException();
         }
     }
