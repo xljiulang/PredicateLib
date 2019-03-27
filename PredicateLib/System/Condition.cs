@@ -12,11 +12,6 @@ namespace System
     public class Condition<T>
     {
         /// <summary>
-        /// 类型的所有属性
-        /// </summary>
-        private readonly static PropertyInfo[] typeProperties = typeof(T).GetProperties();
-
-        /// <summary>
         /// 查询条件
         /// </summary>
         private readonly IDictionary<PropertyInfo, string> queryValues;
@@ -31,10 +26,16 @@ namespace System
         /// </summary>
         private readonly Dictionary<MemberInfo, Operator> operatorConfigs = new Dictionary<MemberInfo, Operator>();
 
+
+        /// <summary>
+        /// 获取T类型的所有属性
+        /// </summary>
+        public readonly static PropertyInfo[] TypeProperties = typeof(T).GetProperties();
+
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="queryValues">查询条件</param>
+        /// <param name="queryValues">查询条件值</param>
         public Condition(IEnumerable<KeyValuePair<string, string>> queryValues)
         {
             this.queryValues = new Dictionary<PropertyInfo, string>();
@@ -45,10 +46,10 @@ namespace System
 
             foreach (var query in queryValues)
             {
-                var p = typeProperties.FirstOrDefault(item => item.Name.Equals(query.Key, StringComparison.OrdinalIgnoreCase));
-                if (p != null)
+                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(query.Key, StringComparison.OrdinalIgnoreCase));
+                if (member != null)
                 {
-                    this.queryValues.Add(p, query.Value);
+                    this.queryValues.Add(member, query.Value);
                 }
             }
         }
@@ -106,15 +107,15 @@ namespace System
         private Expression<Func<T, bool>> ToPredicate(bool and)
         {
             var exp = default(Expression<Func<T, bool>>);
-            foreach (var kv in this.queryValues)
+            foreach (var query in this.queryValues)
             {
-                var member = kv.Key;
+                var member = query.Key;
                 if (this.ignoreConfigs.Contains(member) == true)
                 {
                     continue;
                 }
 
-                var value = Convert(kv.Value, member.PropertyType);
+                var value = Convert(query.Value, member.PropertyType);
                 var op = this.GetOperator(member);
                 var expRight = Predicate.Create<T>(member, value, op);
 
@@ -159,10 +160,20 @@ namespace System
                 return null;
             }
 
+            if (typeof(string) == targetType)
+            {
+                return value;
+            }
+
             var underlyingType = Nullable.GetUnderlyingType(targetType);
             if (underlyingType != null)
             {
                 targetType = underlyingType;
+            }
+
+            if (value is IConvertible convertible)
+            {
+                return convertible.ToType(targetType, null);
             }
 
             if (targetType.GetTypeInfo().IsEnum == true)
@@ -170,22 +181,11 @@ namespace System
                 return Enum.Parse(targetType, value, true);
             }
 
-            if (typeof(string) == targetType)
-            {
-                return value;
-            }
-
             if (typeof(Guid) == targetType)
             {
                 return Guid.Parse(value);
             }
-
-            var convertible = value as IConvertible;
-            if (convertible != null && typeof(IConvertible).IsAssignableFrom(targetType) == true)
-            {
-                return convertible.ToType(targetType, null);
-            }
-
+           
             throw new NotSupportedException();
         }
     }
