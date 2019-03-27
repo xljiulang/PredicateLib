@@ -48,7 +48,13 @@ namespace System
                 yield break;
             }
 
-            var query = uri.Query.TrimStart('?').Split('&');
+            var index = uri.OriginalString.IndexOf('?');
+            if (index < 0)
+            {
+                yield break;
+            }
+
+            var query = uri.OriginalString.Substring(index + 1).Split('&');
             foreach (var q in query)
             {
                 var kv = q.Split('=');
