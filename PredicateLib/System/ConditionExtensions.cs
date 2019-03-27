@@ -3,54 +3,31 @@
 namespace System
 {
     /// <summary>
-    /// 表示查询条件 
+    /// 提供查询条件扩展
     /// </summary>
     public static class ConditionExtensions
     {
         /// <summary>
-        /// 转换为使用true关联的查询条件 
+        /// 转换为T类型的查询条件 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="uri">请求Uri，从query解析出查询条件</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        public static Condition<T> AsTrueCondition<T>(this Uri uri)
+        public static Condition<T> AsCondition<T>(this Uri uri)
         {
-            return uri.GetQueryValues().AsTrueCondition<T>();
+            return uri.GetQueryValues().AsCondition<T>();
         }
 
         /// <summary>
-        /// 转换为使用false关联的查询条件 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="uri">请求Uri，从query解析出查询条件</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <returns></returns>
-        public static Condition<T> AsFalseCondition<T>(this Uri uri)
-        {
-            return uri.GetQueryValues().AsFalseCondition<T>();
-        }
-
-        /// <summary>
-        /// 转换为使用true关联的查询条件 
+        /// 转换为T类型的查询条件 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="keyValues">查询条件</param>
         /// <returns></returns>
-        public static Condition<T> AsTrueCondition<T>(this IEnumerable<KeyValuePair<string, string>> keyValues)
+        public static Condition<T> AsCondition<T>(this IEnumerable<KeyValuePair<string, string>> keyValues)
         {
-            return new Condition<T>(Predicate.True<T>(), keyValues);
-        }
-
-        /// <summary>
-        /// 转换为使用false关联的查询条件
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="keyValues">查询条件</param>
-        /// <returns></returns>
-        public static Condition<T> AsFalseCondition<T>(this IEnumerable<KeyValuePair<string, string>> keyValues)
-        {
-            return new Condition<T>(Predicate.True<T>(), keyValues);
+            return new Condition<T>(keyValues);
         }
 
         /// <summary>

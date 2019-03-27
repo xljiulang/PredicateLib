@@ -17,11 +17,6 @@ namespace System
         private readonly static PropertyInfo[] typeProperties = typeof(T).GetProperties();
 
         /// <summary>
-        /// 表达式
-        /// </summary>
-        private readonly Expression<Func<T, bool>> predicate;
-
-        /// <summary>
         /// 查询条件
         /// </summary>
         private readonly IDictionary<PropertyInfo, string> queryValues;
@@ -39,35 +34,23 @@ namespace System
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="predicate">基础条件</param>
         /// <param name="queryValues">查询条件</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        public Condition(Expression<Func<T, bool>> predicate, IEnumerable<KeyValuePair<string, string>> queryValues)
+        public Condition(IEnumerable<KeyValuePair<string, string>> queryValues)
         {
-            this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-            this.queryValues = this.CastToDictionary(queryValues);
-        }
-
-        /// <summary>
-        /// 将查询条件转换为模型属性与值的字典
-        /// </summary>
-        /// <param name="queryValues"></param>
-        /// <returns></returns>
-        private Dictionary<PropertyInfo, string> CastToDictionary(IEnumerable<KeyValuePair<string, string>> queryValues)
-        {
-            var dic = new Dictionary<PropertyInfo, string>();
-            if (queryValues != null)
+            this.queryValues = new Dictionary<PropertyInfo, string>();
+            if (queryValues == null)
             {
-                foreach (var q in queryValues)
+                return;
+            }
+
+            foreach (var query in queryValues)
+            {
+                var p = typeProperties.FirstOrDefault(item => item.Name.Equals(query.Key, StringComparison.OrdinalIgnoreCase));
+                if (p != null)
                 {
-                    var p = typeProperties.FirstOrDefault(item => item.Name.Equals(q.Key, StringComparison.OrdinalIgnoreCase));
-                    if (p != null)
-                    {
-                        dic.Add(p, q.Value);
-                    }
+                    this.queryValues.Add(p, query.Value);
                 }
             }
-            return dic;
         }
 
         /// <summary>
@@ -103,7 +86,7 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToAndPredicate()
         {
-            return this.ToPredicate(and: true);
+            return this.ToPredicate(and: true) ?? Predicate.True<T>();
         }
 
         /// <summary>
@@ -112,7 +95,7 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToOrPredicate()
         {
-            return this.ToPredicate(and: false);
+            return this.ToPredicate(and: false) ?? Predicate.False<T>();
         }
 
         /// <summary>
@@ -122,15 +105,25 @@ namespace System
         /// <returns></returns>
         private Expression<Func<T, bool>> ToPredicate(bool and)
         {
-            var exp = this.predicate;
+            var exp = default(Expression<Func<T, bool>>);
             foreach (var kv in this.queryValues)
             {
                 var member = kv.Key;
-                if (this.ignoreConfigs.Contains(member) == false)
+                if (this.ignoreConfigs.Contains(member) == true)
                 {
-                    var value = Convert(kv.Value, member.PropertyType);
-                    var op = this.GetOperator(member);
-                    var expRight = Predicate.Create<T>(member, value, op);
+                    continue;
+                }
+
+                var value = Convert(kv.Value, member.PropertyType);
+                var op = this.GetOperator(member);
+                var expRight = Predicate.Create<T>(member, value, op);
+
+                if (exp == null)
+                {
+                    exp = expRight;
+                }
+                else
+                {
                     exp = and ? exp.And(expRight) : exp.Or(expRight);
                 }
             }
