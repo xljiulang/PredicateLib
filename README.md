@@ -2,7 +2,7 @@
 谓词筛选表达式Expression&lt;Func&lt;T, bool>>的扩展库
 
 
-### Predicate拼接
+### 1 Predicate连接扩展
 ```c#
 var predicate = Predicate
     .True<User>()
@@ -15,7 +15,7 @@ if (true)
 ```
 
 
-### Uri搜索条件转换为Predicate
+### 2 搜索条件Condition转换为Predicate
 ```c#
 var uri = new Uri("http://www.xx.com?age=1&name=laojiu&id=001");
 var predicate = uri.AsCondition<User>()
