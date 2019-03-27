@@ -48,13 +48,19 @@ namespace System
                 yield break;
             }
 
-            var index = uri.OriginalString.IndexOf('?');
-            if (index < 0)
+            var index = uri.OriginalString.IndexOf('?') + 1;
+            if (index < 1)
             {
                 yield break;
             }
 
-            var query = uri.OriginalString.Substring(index + 1).Split('&');
+            var fragmentIndex = uri.OriginalString.IndexOf('#');
+            if (fragmentIndex < 0)
+            {
+                fragmentIndex = uri.OriginalString.Length;
+            }
+
+            var query = uri.OriginalString.Substring(index, fragmentIndex - index).Split('&');
             foreach (var q in query)
             {
                 var kv = q.Split('=');
