@@ -17,9 +17,15 @@ if (true)
 
 ### Uri搜索条件转换为Predicate
 ```c#
-var uri = new Uri("http://www.xx.com?age=1&name=laojiu&birthday=2010-01-01&id=001");
+var uri = new Uri("http://www.xx.com?age=1&name=laojiu&id=001");
 var predicate = uri.AsCondition<User>()
-    .OperatorFor(item => item.Age, Operator.GreaterThan)                
-    .ToAndPredicate();
+    .OperatorFor(item => item.Age, Operator.GreaterThan)
+    .IgnoreFor(item => item.Id)
+    .ToAndPredicate();  
+```
+> 输出
+
+```
+item => ((item.Age > 1) AndAlso item.Name.Contains("laojiu"))
 ```
 
