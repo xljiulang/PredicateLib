@@ -15,7 +15,7 @@ if (true)
 ```
 
 
-### Uri搜索条件转换为
+### Uri搜索条件转换为Predicate
 ```c#
 var uri = new Uri("http://www.xx.com?age=1&name=laojiu&birthday=2010-01-01&id=001");
 var predicate = uri.AsTrueCondition<User>()
