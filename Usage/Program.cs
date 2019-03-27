@@ -15,7 +15,7 @@ namespace Usage
     {
         static void Main(string[] args)
         {
-            var uri = new Uri("http://www.xx.com?age=1&name=laojiu&id=001");
+            var uri = new Uri("http://www.xx.com/?age=1&name=%E8%80%81%E4%B9%9D&id=001");
 
             var predicate = uri.AsCondition<User>()
                 .OperatorFor(item => item.Age, Operator.GreaterThan)

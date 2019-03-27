@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 
 namespace System
 {
@@ -7,6 +8,11 @@ namespace System
     /// </summary>
     public static class ConditionExtensions
     {
+        /// <summary>
+        /// 默认的编码
+        /// </summary>
+        private static readonly Encoding defaultEncoding = Encoding.UTF8;
+
         /// <summary>
         /// 转换为T类型的查询条件 
         /// </summary>
@@ -48,25 +54,15 @@ namespace System
                 yield break;
             }
 
-            var index = uri.OriginalString.IndexOf('?') + 1;
-            if (index < 1)
-            {
-                yield break;
-            }
-
-            var fragmentIndex = uri.OriginalString.IndexOf('#');
-            if (fragmentIndex < 0)
-            {
-                fragmentIndex = uri.OriginalString.Length;
-            }
-
-            var query = uri.OriginalString.Substring(index, fragmentIndex - index).Split('&');
+            var query = uri.Query.TrimStart('?').Split('&');
             foreach (var q in query)
             {
                 var kv = q.Split('=');
                 if (kv.Length == 2)
                 {
-                    yield return new KeyValuePair<string, string>(kv[0], kv[1]);
+                    var key = HttpUtility.UrlDecode(kv[0], defaultEncoding);
+                    var value = HttpUtility.UrlDecode(kv[1], defaultEncoding);
+                    yield return new KeyValuePair<string, string>(key, value);
                 }
             }
         }
