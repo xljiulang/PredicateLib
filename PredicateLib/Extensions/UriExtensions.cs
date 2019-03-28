@@ -133,7 +133,7 @@ namespace System
 
             // Accumulate characters in a special array
             private int _numChars;
-            private char[] _charBuffer;
+            private readonly char[] _charBuffer;
 
             // Accumulate bytes for decoding into characters in a special array
             private int _numBytes;

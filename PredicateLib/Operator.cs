@@ -1,4 +1,4 @@
-﻿namespace System
+﻿namespace PredicateLib
 {
     /// <summary>
     /// 比较操作符

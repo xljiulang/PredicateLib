@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace System
+namespace PredicateLib
 {
     /// <summary>
     /// 提供谓词筛选表达式的生成

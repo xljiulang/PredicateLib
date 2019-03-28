@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace System
+namespace PredicateLib
 {
     /// <summary>
     /// 表示查询条件

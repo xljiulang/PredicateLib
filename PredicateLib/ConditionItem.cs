@@ -1,8 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace System
+namespace PredicateLib
 {
     /// <summary>
     /// 表示条件项

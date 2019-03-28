@@ -1,6 +1,8 @@
+using PredicateLib;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
-namespace System.Linq.Expressions
+namespace System
 {
     /// <summary>
     /// 谓词筛选表达式扩展
