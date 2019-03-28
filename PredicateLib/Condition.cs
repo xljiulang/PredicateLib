@@ -28,7 +28,7 @@ namespace PredicateLib
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="conditionValues">查询条件项</param>
+        /// <param name="conditionItems">查询条件项</param>
         public Condition(IEnumerable<KeyValuePair<string, object>> conditionItems)
             : this(GetConditionItems(conditionItems))
         {
@@ -70,7 +70,7 @@ namespace PredicateLib
         /// <typeparam name="TValue"></typeparam>
         /// <param name="keyValues">条件值</param>
         /// <returns></returns>
-        private static IEnumerable<ConditionItem<T>> GetConditionItems<TValue>(IEnumerable<KeyValuePair<string, TValue>> keyValues)
+        private static IEnumerable<ConditionItem> GetConditionItems<TValue>(IEnumerable<KeyValuePair<string, TValue>> keyValues)
         {
             if (keyValues == null)
             {
@@ -83,7 +83,7 @@ namespace PredicateLib
                 {
                     MemberName = keyValue.Key,
                     Value = keyValue.Value
-                }.AsGeneric<T>();
+                };
             }
         }
 
@@ -114,10 +114,12 @@ namespace PredicateLib
         public Condition<T> OperatorFor<TKey>(Expression<Func<T, TKey>> keySelector, Operator @operator)
         {
             var exp = keySelector.Body as MemberExpression;
-            var targets = this.Items.Where(item => item.Member == exp.Member);
-            foreach (var item in targets)
+            foreach (var item in this.Items)
             {
-                item.Operator = @operator;
+                if (item.Member == exp.Member)
+                {
+                    item.Operator = @operator;
+                }
             }
             return this;
         }

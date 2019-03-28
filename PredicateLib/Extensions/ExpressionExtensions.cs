@@ -80,6 +80,7 @@ namespace System
         /// 与逻辑运算
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
+        /// <typeparam name="TKey"></typeparam>
         /// <param name="expLeft">表达式1</param>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">值</param>
@@ -94,6 +95,7 @@ namespace System
         /// 与逻辑运算
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
+        /// <typeparam name="TKey">属性类型</typeparam>
         /// <param name="expLeft">表达式1</param>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">值</param>
@@ -103,7 +105,6 @@ namespace System
             var expRight = Predicate.CreateOrNotEqualPredicate(keySelector, values);
             return expLeft.And(expRight);
         }
-
 
         /// <summary>
         /// 将表达式参数类型转换
