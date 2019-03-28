@@ -196,44 +196,50 @@ namespace PredicateLib
         /// 使用属性访问表达式替代常量访问
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="valueType"></param>
+        /// <param name="targetType"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
-        private static Expression ConstantExpression(object value, Type valueType)
+        private static Expression ConstantExpression(object value, Type targetType)
         {
-            if (valueType == null)
+            if (targetType == null)
             {
-                throw new ArgumentNullException(nameof(valueType));
+                throw new ArgumentNullException(nameof(targetType));
             }
 
             if (value == null)
             {
-                return Expression.Constant(value, valueType);
+                return Expression.Constant(value, targetType);
             }
 
-            var constantType = typeof(Constant<>).MakeGenericType(valueType);
-            var constant = constantType.GetConstructor(new[] { valueType }).Invoke(new[] { value });
-            return Expression.Property(Expression.Constant(constant), "Value");
+            if (targetType == typeof(string))
+            {
+                var constantString = Expression.Constant(new ConstantString(value));
+                return Expression.Property(constantString, nameof(ConstantString.Value));
+            }
+            else
+            {
+                var expression = (Expression)Expression.Constant(value);
+                return value.GetType() == targetType ? expression : Expression.Convert(expression, targetType);
+            }
         }
 
         /// <summary>
-        /// 表示常量包装
+        /// 表示文本常量
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        private class Constant<T>
+        private class ConstantString
         {
             /// <summary>
-            /// 获取常量
+            /// 获取常量值
             /// </summary>
-            public T Value { get; }
+            public string Value { get; }
 
             /// <summary>
-            /// 常量包装
+            /// 文本常量
             /// </summary>
-            /// <param name="value">常量</param>
-            public Constant(T value)
+            /// <param name="value">常量值</param>
+            public ConstantString(object value)
             {
-                this.Value = value;
+                this.Value = value?.ToString();
             }
 
             /// <summary>
@@ -242,7 +248,7 @@ namespace PredicateLib
             /// <returns></returns>
             public override string ToString()
             {
-                return $"({this.Value})";
+                return $@"""{this.Value}""";
             }
         }
     }
