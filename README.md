@@ -46,11 +46,13 @@ item => ((True AndAlso (item.Name == "laojiu")) AndAlso ((item.Age > 10) AndAlso
 Condition对象支持传入`IEnumerable<KeyValuePair<,>>`，`IEnumerable<ConditionItem>`等类型作为条件项，然后转换为Predicate，适用于前端传入查询不确定的字段与值，后端不需要修改代码的需求。
 
 ```c#
-var uri = new Uri("http://www.xx.com?age=1&name=laojiu&id=001");
-var predicate = uri.AsCondition<User>()
+var uri = new Uri("http://www.xx.com/?age=1&name=laojiu&id=001");
+
+var condition = uri.AsCondition<User>()
     .OperatorFor(item => item.Age, Operator.GreaterThan)
-    .IgnoreFor(item => item.Id)
-    .ToAndPredicate();  
+    .IgnoreFor(item => item.Id);
+
+var predicate = condition.ToAndPredicate();
 ```
 > 表达式输出
 
