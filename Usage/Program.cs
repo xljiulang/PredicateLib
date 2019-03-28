@@ -17,10 +17,13 @@ namespace Usage
         {
             var uri = new Uri("http://www.xx.com/?age=1&name=%E8%80%81%E4%B9%9D&id=001");
 
-            var predicate = uri.AsCondition<User>()
+            var condition = uri.AsCondition<User>()
                 .OperatorFor(item => item.Age, Operator.GreaterThan)
-                .IgnoreFor(item => item.Id)
-                .ToAndPredicate();
+                .IgnoreFor(item => item.Id);
+
+            var predicate = condition
+                .ToAndPredicate()
+                .Or(item => item.Birthday < DateTime.Now);
 
             Console.WriteLine(predicate);
             Console.ReadLine();
