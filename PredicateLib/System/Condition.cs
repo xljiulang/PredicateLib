@@ -14,18 +14,7 @@ namespace System
         /// <summary>
         /// 查询条件的值
         /// </summary>
-        private readonly IDictionary<PropertyInfo, object> conditionValues;
-
-        /// <summary>
-        /// 忽略配置
-        /// </summary>
-        private readonly List<MemberInfo> ignoreConfigs = new List<MemberInfo>();
-
-        /// <summary>
-        /// Operator配置
-        /// </summary>
-        private readonly Dictionary<MemberInfo, Operator> operatorConfigs = new Dictionary<MemberInfo, Operator>();
-
+        private readonly List<ConditionItem<T>> conditionItems = new List<ConditionItem<T>>();
 
         /// <summary>
         /// 获取T类型的所有属性
@@ -35,19 +24,32 @@ namespace System
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="conditionValues">查询条件值</param>
-        public Condition(IEnumerable<KeyValuePair<string, string>> conditionValues)
+        /// <param name="conditionItems">查询条件项</param>
+        public Condition(IEnumerable<KeyValuePair<string, string>> conditionItems)
+            : this(GetConditionItems(conditionItems))
         {
-            this.conditionValues = CastConditionValues(conditionValues);
         }
 
         /// <summary>
         /// 查询条件
         /// </summary>
-        /// <param name="conditionValues">查询条件值</param>
-        public Condition(IEnumerable<KeyValuePair<string, object>> conditionValues)
+        /// <param name="conditionValues">查询条件项</param>
+        public Condition(IEnumerable<KeyValuePair<string, object>> conditionItems)
+            : this(GetConditionItems(conditionItems))
         {
-            this.conditionValues = CastConditionValues(conditionValues);
+        }
+
+        /// <summary>
+        /// 查询条件
+        /// </summary>
+        /// <param name="conditionItems">查询条件项</param>
+        public Condition(IEnumerable<ConditionItem<T>> conditionItems)
+        {
+            if (conditionItems == null)
+            {
+                return;
+            }
+            this.conditionItems.AddRange(conditionItems);
         }
 
         /// <summary>
@@ -56,25 +58,21 @@ namespace System
         /// <typeparam name="TValue"></typeparam>
         /// <param name="keyValues">条件值</param>
         /// <returns></returns>
-        private static IDictionary<PropertyInfo, object> CastConditionValues<TValue>(IEnumerable<KeyValuePair<string, TValue>> keyValues)
+        private static IEnumerable<ConditionItem<T>> GetConditionItems<TValue>(IEnumerable<KeyValuePair<string, TValue>> keyValues)
         {
-            var conditionValues = new Dictionary<PropertyInfo, object>();
             if (keyValues == null)
             {
-                return conditionValues;
+                yield break;
             }
 
-            foreach (var condition in keyValues)
+            foreach (var keyValue in keyValues)
             {
-                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(condition.Key, StringComparison.OrdinalIgnoreCase));
+                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(keyValue.Key, StringComparison.OrdinalIgnoreCase));
                 if (member != null)
                 {
-                    var castValue = ConvertToType(condition.Value, member.PropertyType);
-                    conditionValues.Add(member, castValue);
+                    yield return new ConditionItem<T>(member, keyValue.Value);
                 }
             }
-
-            return conditionValues;
         }
 
         /// <summary>
@@ -86,7 +84,11 @@ namespace System
         public Condition<T> IgnoreFor<TKey>(Expression<Func<T, TKey>> keySelector)
         {
             var exp = keySelector.Body as MemberExpression;
-            this.ignoreConfigs.Add(exp.Member);
+            var targets = this.conditionItems.Where(item => item.Member == exp.Member).ToArray();
+            foreach (var item in targets)
+            {
+                this.conditionItems.Remove(item);
+            }
             return this;
         }
 
@@ -100,7 +102,11 @@ namespace System
         public Condition<T> OperatorFor<TKey>(Expression<Func<T, TKey>> keySelector, Operator @operator)
         {
             var exp = keySelector.Body as MemberExpression;
-            this.operatorConfigs[exp.Member] = @operator;
+            var targets = this.conditionItems.Where(item => item.Member == exp.Member);
+            foreach (var item in targets)
+            {
+                item.Operator = @operator;
+            }
             return this;
         }
 
@@ -110,7 +116,14 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToAndPredicate()
         {
-            return this.ToPredicate(and: true) ?? Predicate.True<T>();
+            if (this.conditionItems.Count == 0)
+            {
+                return Predicate.True<T>();
+            }
+
+            return this.conditionItems
+                .Select(item => item.ToPredicate())
+                .Aggregate((left, right) => left.And(right));
         }
 
         /// <summary>
@@ -119,97 +132,14 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToOrPredicate()
         {
-            return this.ToPredicate(and: false) ?? Predicate.False<T>();
-        }
-
-        /// <summary>
-        /// 转换为And Or连接的谓词筛选表达式
-        /// </summary>
-        /// <param name="and"></param>
-        /// <returns></returns>
-        private Expression<Func<T, bool>> ToPredicate(bool and)
-        {
-            var exp = default(Expression<Func<T, bool>>);
-            foreach (var condition in this.conditionValues)
+            if (this.conditionItems.Count == 0)
             {
-                var member = condition.Key;
-                if (this.ignoreConfigs.Contains(member) == true)
-                {
-                    continue;
-                }
-
-                var op = this.GetOperator(member);
-                var expRight = Predicate.Create<T>(member, condition.Value, op);
-
-                if (exp == null)
-                {
-                    exp = expRight;
-                }
-                else
-                {
-                    exp = and ? exp.And(expRight) : exp.Or(expRight);
-                }
-            }
-            return exp;
-        }
-
-        /// <summary>
-        /// 获取操作符
-        /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
-        private Operator GetOperator(PropertyInfo member)
-        {
-            if (this.operatorConfigs.TryGetValue(member, out Operator @operator) == true)
-            {
-                return @operator;
-            }
-            return member.PropertyType == typeof(string) ? Operator.Contains : Operator.Equal;
-        }
-
-
-        /// <summary>
-        /// 将value转换为目标类型
-        /// </summary>
-        /// <param name="value">要转换的值</param>
-        /// <param name="targetType">转换的目标类型</param>
-        /// <exception cref="NotSupportedException"></exception>
-        /// <returns></returns>
-        private static object ConvertToType(object value, Type targetType)
-        {
-            if (value == null)
-            {
-                return null;
+                return Predicate.False<T>();
             }
 
-            if (value.GetType() == targetType)
-            {
-                return value;
-            }
-
-            var underlyingType = Nullable.GetUnderlyingType(targetType);
-            if (underlyingType != null)
-            {
-                targetType = underlyingType;
-            }
-
-            if (value is IConvertible convertible)
-            {
-                return convertible.ToType(targetType, null);
-            }
-
-            var valueString = value.ToString();
-            if (targetType.GetTypeInfo().IsEnum == true)
-            {
-                return Enum.Parse(targetType, valueString, true);
-            }
-
-            if (typeof(Guid) == targetType)
-            {
-                return Guid.Parse(valueString);
-            }
-
-            throw new NotSupportedException();
+            return this.conditionItems
+                .Select(item => item.ToPredicate())
+                .Aggregate((left, right) => left.Or(right));
         }
     }
 }
