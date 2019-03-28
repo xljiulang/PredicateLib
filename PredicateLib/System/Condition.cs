@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace System
 {
@@ -12,14 +11,9 @@ namespace System
     public class Condition<T>
     {
         /// <summary>
-        /// 查询条件的值
+        /// 获取查询条件项
         /// </summary>
-        private readonly List<ConditionItem<T>> conditionItems = new List<ConditionItem<T>>();
-
-        /// <summary>
-        /// 获取T类型的所有属性
-        /// </summary>
-        public readonly static PropertyInfo[] TypeProperties = typeof(T).GetProperties();
+        public IList<ConditionItem<T>> Items { get; } = new List<ConditionItem<T>>();
 
         /// <summary>
         /// 查询条件
@@ -43,14 +37,31 @@ namespace System
         /// 查询条件
         /// </summary>
         /// <param name="conditionItems">查询条件项</param>
+        public Condition(IEnumerable<ConditionItem> conditionItems)
+            : this(conditionItems.Select(item => item.AsGeneric<T>()))
+        {
+        }
+
+        /// <summary>
+        /// 查询条件
+        /// </summary>
+        /// <param name="conditionItems">查询条件项</param>
         public Condition(IEnumerable<ConditionItem<T>> conditionItems)
         {
             if (conditionItems == null)
             {
                 return;
             }
-            this.conditionItems.AddRange(conditionItems);
+
+            foreach (var item in conditionItems)
+            {
+                if (item != null)
+                {
+                    this.Items.Add(item);
+                }
+            }
         }
+
 
         /// <summary>
         /// 转换条件值
@@ -67,11 +78,11 @@ namespace System
 
             foreach (var keyValue in keyValues)
             {
-                var member = TypeProperties.FirstOrDefault(item => item.Name.Equals(keyValue.Key, StringComparison.OrdinalIgnoreCase));
-                if (member != null)
+                yield return new ConditionItem
                 {
-                    yield return new ConditionItem<T>(member, keyValue.Value);
-                }
+                    MemberName = keyValue.Key,
+                    Value = keyValue.Value
+                }.AsGeneric<T>();
             }
         }
 
@@ -84,10 +95,10 @@ namespace System
         public Condition<T> IgnoreFor<TKey>(Expression<Func<T, TKey>> keySelector)
         {
             var exp = keySelector.Body as MemberExpression;
-            var targets = this.conditionItems.Where(item => item.Member == exp.Member).ToArray();
+            var targets = this.Items.Where(item => item.Member == exp.Member).ToArray();
             foreach (var item in targets)
             {
-                this.conditionItems.Remove(item);
+                this.Items.Remove(item);
             }
             return this;
         }
@@ -102,7 +113,7 @@ namespace System
         public Condition<T> OperatorFor<TKey>(Expression<Func<T, TKey>> keySelector, Operator @operator)
         {
             var exp = keySelector.Body as MemberExpression;
-            var targets = this.conditionItems.Where(item => item.Member == exp.Member);
+            var targets = this.Items.Where(item => item.Member == exp.Member);
             foreach (var item in targets)
             {
                 item.Operator = @operator;
@@ -116,12 +127,12 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToAndPredicate()
         {
-            if (this.conditionItems.Count == 0)
+            if (this.Items.Count == 0)
             {
                 return Predicate.True<T>();
             }
 
-            return this.conditionItems
+            return this.Items
                 .Select(item => item.ToPredicate())
                 .Aggregate((left, right) => left.And(right));
         }
@@ -132,12 +143,12 @@ namespace System
         /// <returns></returns>
         public Expression<Func<T, bool>> ToOrPredicate()
         {
-            if (this.conditionItems.Count == 0)
+            if (this.Items.Count == 0)
             {
                 return Predicate.False<T>();
             }
 
-            return this.conditionItems
+            return this.Items
                 .Select(item => item.ToPredicate())
                 .Aggregate((left, right) => left.Or(right));
         }
