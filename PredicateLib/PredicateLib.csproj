@@ -2,7 +2,14 @@
 
   <PropertyGroup>
     <TargetFrameworks>net40;netstandard1.3</TargetFrameworks>
+    <Description>谓词筛选表达式Expression&lt;Func&lt;T, bool&gt;&gt;的扩展库</Description>
+    <Authors>xlijulang</Authors>
+    <Version>0.0.1</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/xljiulang/PredicateLib</PackageProjectUrl>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
+ 
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">    
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
