@@ -127,12 +127,13 @@ namespace PredicateLib
         /// <summary>
         /// 转换为And连接的谓词筛选表达式
         /// </summary>
+        /// <param name="trueWhenNull">当生成的表达式为null时返回true表达式</param>
         /// <returns></returns>
-        public Expression<Func<T, bool>> ToAndPredicate()
+        public Expression<Func<T, bool>> ToAndPredicate(bool trueWhenNull = true)
         {
             if (this.Items.Count == 0)
             {
-                return Predicate.True<T>();
+                return trueWhenNull ? Predicate.True<T>() : null;
             }
 
             return this.Items
@@ -143,12 +144,13 @@ namespace PredicateLib
         /// <summary>
         /// 转换为Or连接的谓词筛选表达式
         /// </summary>
+        /// <param name="falseWhenNull">当生成的表达式为null时返回false表达式</param>
         /// <returns></returns>
-        public Expression<Func<T, bool>> ToOrPredicate()
+        public Expression<Func<T, bool>> ToOrPredicate(bool falseWhenNull = true)
         {
             if (this.Items.Count == 0)
             {
-                return Predicate.False<T>();
+                return falseWhenNull ? Predicate.False<T>() : null;
             }
 
             return this.Items

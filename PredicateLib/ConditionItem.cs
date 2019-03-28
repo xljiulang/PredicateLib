@@ -130,7 +130,7 @@ namespace PredicateLib
                 return Enum.Parse(targetType, value.ToString(), true);
             }
 
-            if (value is IConvertible convertible)
+            if (value is IConvertible convertible && targetType.IsInheritFrom<IConvertible>())
             {
                 return convertible.ToType(targetType, null);
             }
@@ -140,9 +140,13 @@ namespace PredicateLib
                 return Guid.Parse(value.ToString());
             }
 
-            throw new NotSupportedException();
-        }
+            if (typeof(DateTimeOffset) == targetType)
+            {
+                return DateTimeOffset.Parse(value.ToString());
+            }
 
+            throw new NotSupportedException($"不支持将对象{value}转换为{targetType}");
+        }
 
         /// <summary>
         /// 转换为谓词筛选表达式
