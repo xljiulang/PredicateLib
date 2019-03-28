@@ -184,8 +184,7 @@ namespace PredicateLib
                     return Expression.Lambda(body, parameter) as Expression<Func<T, bool>>;
 
                 default:
-                    var valueType = member.Type;
-                    var valueExp = ConstantExpression(value, valueType);
+                    var valueExp = ConstantExpression(value, member.Type);
                     var binaryBody = Expression.MakeBinary((ExpressionType)@operator, member, valueExp);
                     return Expression.Lambda(binaryBody, parameter) as Expression<Func<T, bool>>;
             }
