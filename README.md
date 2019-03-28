@@ -1,6 +1,10 @@
 # PredicateLib
 [PredicateLib](https://github.com/xljiulang/PredicateLib)是谓词筛选表达式Expression&lt;Func&lt;T, bool>>的一个扩展库，它可以帮你创建一个复杂且灵活的Expression&lt;Func&lt;T, bool>>，以作为EF、MongoDB Driver等ORM框架的查询条件。
 
+> nuget
+
+`PM> install-package PredicateLib`
+
 ### 1 Predicate的创建
 #### 1.1 true或false Predicate
 ```c#
