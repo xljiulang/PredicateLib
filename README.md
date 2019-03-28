@@ -61,6 +61,6 @@ var predicate = condition.ToAndPredicate();
 > 表达式输出
 
 ```c#
-item => ((item.Age > 1) AndAlso item.Name.Contains("laojiu"))
+item => ((item.Age > 1) AndAlso item.Name.Contains("laojiu".Value))
 ```
 
