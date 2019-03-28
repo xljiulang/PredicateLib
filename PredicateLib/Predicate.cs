@@ -27,7 +27,7 @@ namespace PredicateLib
         static Predicate()
         {
             var q = from m in typeof(Enumerable).GetMethods()
-                    where m.Name == "Contains" && m.IsGenericMethod
+                    where m.Name == nameof(Enumerable.Contains) && m.IsGenericMethod
                     let parameters = m.GetParameters()
                     where parameters.Length == 2
                     let pLast = parameters.Last()
@@ -69,25 +69,25 @@ namespace PredicateLib
         public static Expression<Func<T, bool>> CreateOrEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var parameter = keySelector.Parameters.Single();
-            var equals = values.Select(value => (Expression)Expression.Equal(keySelector.Body, ConstantExpression(value, typeof(TKey))));
-            var body = equals.Aggregate((accumulate, equal) => Expression.OrElse(accumulate, equal));
+            var expressions = values.Select(value => (Expression)Expression.Equal(keySelector.Body, ConstantExpression(value, typeof(TKey))));
+            var body = expressions.Aggregate((left, right) => Expression.OrElse(left, right));
             return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
 
 
         /// <summary>
-        /// 将数组转换为Or的不等的谓词筛选表达式
+        /// 将数组转换为And的不等的谓词筛选表达式
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <typeparam name="TKey">>属性类型</typeparam>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> CreateOrNotEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
+        public static Expression<Func<T, bool>> CreateAndNotEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var parameter = keySelector.Parameters.Single();
-            var equals = values.Select(value => (Expression)Expression.NotEqual(keySelector.Body, ConstantExpression(value, typeof(TKey))));
-            var body = equals.Aggregate((accumulate, equal) => Expression.AndAlso(accumulate, equal));
+            var expressions = values.Select(value => (Expression)Expression.NotEqual(keySelector.Body, ConstantExpression(value, typeof(TKey))));
+            var body = expressions.Aggregate((left, right) => Expression.AndAlso(left, right));
             return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
 
@@ -102,9 +102,9 @@ namespace PredicateLib
         public static Expression<Func<T, bool>> CreateContains<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var method = containsMethod.MakeGenericMethod(typeof(TKey));
-            var callBody = Expression.Call(null, method, ConstantExpression(values, typeof(IEnumerable<TKey>)), keySelector.Body);
-            var paramExp = keySelector.Parameters.Single();
-            return Expression.Lambda(callBody, paramExp) as Expression<Func<T, bool>>;
+            var body = Expression.Call(null, method, ConstantExpression(values, typeof(IEnumerable<TKey>)), keySelector.Body);
+            var parameter = keySelector.Parameters.Single();
+            return Expression.Lambda(body, parameter) as Expression<Func<T, bool>>;
         }
 
         /// <summary>
@@ -115,10 +115,11 @@ namespace PredicateLib
         /// <param name="value">值</param>
         /// <param name="operator">操作符</param>
         /// <exception cref="MissingFieldException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T>(string propertyName, object value, Operator @operator)
         {
-            var member = typeof(T).GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
+            var member = ConditionItem<T>.TypeProperties.FirstOrDefault(item => item.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
             if (member == null)
             {
                 throw new MissingFieldException(propertyName);
@@ -133,13 +134,13 @@ namespace PredicateLib
         /// <param name="member">属性成员</param>
         /// <param name="value">值</param>
         /// <param name="operator">操作符</param>
-        /// <exception cref="MissingFieldException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T>(MemberInfo member, object value, Operator @operator)
         {
             var parameter = Expression.Parameter(typeof(T), ParamterName);
-            var memberExp = Expression.MakeMemberAccess(parameter, member);
-            return Create<T>(parameter, memberExp, value, @operator);
+            var memberExpression = Expression.MakeMemberAccess(parameter, member);
+            return Create<T>(parameter, memberExpression, value, @operator);
         }
 
         /// <summary>
@@ -150,6 +151,7 @@ namespace PredicateLib
         /// <param name="keySelector">属性选择</param>
         /// <param name="value">值</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T, TKey>(Expression<Func<T, TKey>> keySelector, TKey value, Operator @operator)
         {
@@ -160,29 +162,32 @@ namespace PredicateLib
         /// 生成表达式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="paramExp">参数表达式</param>
-        /// <param name="memberExp">成员表达式</param>
+        /// <param name="parameter">参数表达式</param>
+        /// <param name="member">成员表达式</param>
         /// <param name="value">属性值</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> Create<T>(ParameterExpression paramExp, MemberExpression memberExp, object value, Operator @operator)
+        public static Expression<Func<T, bool>> Create<T>(ParameterExpression parameter, MemberExpression member, object value, Operator @operator)
         {
             switch (@operator)
             {
                 case Operator.Contains:
                 case Operator.EndWith:
                 case Operator.StartsWith:
+                    if (value != null && value.GetType() != typeof(string))
+                    {
+                        throw new NotSupportedException($"{nameof(Operator)}.{@operator}只适用于string类型");
+                    }
                     var method = typeof(string).GetMethod(@operator.ToString(), new Type[] { typeof(string) });
-                    var callBody = Expression.Call(memberExp, method, ConstantExpression(value, typeof(string)));
-                    return Expression.Lambda(callBody, paramExp) as Expression<Func<T, bool>>;
+                    var body = Expression.Call(member, method, ConstantExpression(value, typeof(string)));
+                    return Expression.Lambda(body, parameter) as Expression<Func<T, bool>>;
 
                 default:
-                    var valueType = (memberExp.Member as PropertyInfo).PropertyType;
+                    var valueType = member.Type;
                     var valueExp = ConstantExpression(value, valueType);
-                    var expMethod = typeof(Expression).GetMethod(@operator.ToString(), new Type[] { typeof(Expression), typeof(Expression) });
-
-                    var symbolBody = expMethod.Invoke(null, new object[] { memberExp, valueExp }) as Expression;
-                    return Expression.Lambda(symbolBody, paramExp) as Expression<Func<T, bool>>;
+                    var binaryBody = Expression.MakeBinary((ExpressionType)@operator, member, valueExp);
+                    return Expression.Lambda(binaryBody, parameter) as Expression<Func<T, bool>>;
             }
         }
 
@@ -200,6 +205,7 @@ namespace PredicateLib
             {
                 throw new ArgumentNullException(nameof(valueType));
             }
+
             if (value == null)
             {
                 return Expression.Constant(value, valueType);
@@ -207,7 +213,7 @@ namespace PredicateLib
 
             var constantType = typeof(Constant<>).MakeGenericType(valueType);
             var constant = constantType.GetConstructor(new[] { valueType }).Invoke(new[] { value });
-            return Expression.MakeMemberAccess(Expression.Constant(constant), constantType.GetProperty("Value"));
+            return Expression.Property(Expression.Constant(constant), "Value");
         }
 
         /// <summary>
@@ -228,6 +234,15 @@ namespace PredicateLib
             public Constant(T value)
             {
                 this.Value = value;
+            }
+
+            /// <summary>
+            /// 转换为字符串
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"({this.Value})";
             }
         }
     }

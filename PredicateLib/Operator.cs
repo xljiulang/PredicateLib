@@ -1,4 +1,6 @@
-﻿namespace PredicateLib
+﻿using System.Linq.Expressions;
+
+namespace PredicateLib
 {
     /// <summary>
     /// 比较操作符
@@ -8,45 +10,48 @@
         /// <summary>
         /// 等于
         /// </summary>
-        Equal,
+        Equal = ExpressionType.Equal,
 
         /// <summary>
         /// 不等于
         /// </summary>
-        NotEqual,
+        NotEqual = ExpressionType.NotEqual,
 
         /// <summary>
         /// 大于或等于
         /// </summary>
-        GreaterThanOrEqual,
+        GreaterThanOrEqual = ExpressionType.GreaterThanOrEqual,
 
         /// <summary>
         /// 小于或等于
         /// </summary>
-        LessThanOrEqual,
+        LessThanOrEqual = ExpressionType.LessThanOrEqual,
 
         /// <summary>
         /// 大于
         /// </summary>
-        GreaterThan,
+        GreaterThan = ExpressionType.GreaterThan,
 
         /// <summary>
         /// 小于
         /// </summary>
-        LessThan,
+        LessThan = ExpressionType.LessThan,
 
         /// <summary>
-        /// 包含，like '%{value}%'
+        /// 包含
+        /// like '%{value}%'
         /// </summary>
         Contains,
 
         /// <summary>
-        /// 结束于，like '%{value}'
+        /// 结束于
+        /// like '%{value}'
         /// </summary>
         EndWith,
 
         /// <summary>
-        /// 开始于，like '{value}%'
+        /// 开始于
+        /// like '{value}%'
         /// </summary>
         StartsWith
     }

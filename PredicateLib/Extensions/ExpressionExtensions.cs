@@ -102,7 +102,7 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<T, bool>> AndNotIn<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
-            var expRight = Predicate.CreateOrNotEqual(keySelector, values);
+            var expRight = Predicate.CreateAndNotEqual(keySelector, values);
             return expLeft.And(expRight);
         }
 
