@@ -69,7 +69,7 @@ namespace PredicateLib
         public static Expression<Func<T, bool>> CreateOrEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var parameter = keySelector.Parameters.Single();
-            var equals = values.Select(value => (Expression)Expression.Equal(keySelector.Body, Expression.Constant(value, typeof(TKey))));
+            var equals = values.Select(value => (Expression)Expression.Equal(keySelector.Body, ConstantExpression(value, typeof(TKey))));
             var body = equals.Aggregate((accumulate, equal) => Expression.OrElse(accumulate, equal));
             return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
@@ -86,7 +86,7 @@ namespace PredicateLib
         public static Expression<Func<T, bool>> CreateOrNotEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var parameter = keySelector.Parameters.Single();
-            var equals = values.Select(value => (Expression)Expression.NotEqual(keySelector.Body, Expression.Constant(value, typeof(TKey))));
+            var equals = values.Select(value => (Expression)Expression.NotEqual(keySelector.Body, ConstantExpression(value, typeof(TKey))));
             var body = equals.Aggregate((accumulate, equal) => Expression.AndAlso(accumulate, equal));
             return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
@@ -102,7 +102,7 @@ namespace PredicateLib
         public static Expression<Func<T, bool>> CreateContains<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
             var method = containsMethod.MakeGenericMethod(typeof(TKey));
-            var callBody = Expression.Call(null, method, Expression.Constant(values, typeof(IEnumerable<TKey>)), keySelector.Body);
+            var callBody = Expression.Call(null, method, ConstantExpression(values, typeof(IEnumerable<TKey>)), keySelector.Body);
             var paramExp = keySelector.Parameters.Single();
             return Expression.Lambda(callBody, paramExp) as Expression<Func<T, bool>>;
         }
@@ -173,16 +173,61 @@ namespace PredicateLib
                 case Operator.EndWith:
                 case Operator.StartsWith:
                     var method = typeof(string).GetMethod(@operator.ToString(), new Type[] { typeof(string) });
-                    var callBody = Expression.Call(memberExp, method, Expression.Constant(value, typeof(string)));
+                    var callBody = Expression.Call(memberExp, method, ConstantExpression(value, typeof(string)));
                     return Expression.Lambda(callBody, paramExp) as Expression<Func<T, bool>>;
 
                 default:
                     var valueType = (memberExp.Member as PropertyInfo).PropertyType;
-                    var valueExp = Expression.Constant(value, valueType);
+                    var valueExp = ConstantExpression(value, valueType);
                     var expMethod = typeof(Expression).GetMethod(@operator.ToString(), new Type[] { typeof(Expression), typeof(Expression) });
 
                     var symbolBody = expMethod.Invoke(null, new object[] { memberExp, valueExp }) as Expression;
                     return Expression.Lambda(symbolBody, paramExp) as Expression<Func<T, bool>>;
+            }
+        }
+
+        /// <summary>
+        /// 生成常量表达式
+        /// 使用属性访问表达式替代常量访问
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="valueType"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <returns></returns>
+        private static Expression ConstantExpression(object value, Type valueType)
+        {
+            if (valueType == null)
+            {
+                throw new ArgumentNullException(nameof(valueType));
+            }
+            if (value == null)
+            {
+                return Expression.Constant(value, valueType);
+            }
+
+            var constantType = typeof(Constant<>).MakeGenericType(valueType);
+            var constant = constantType.GetConstructor(new[] { valueType }).Invoke(new[] { value });
+            return Expression.MakeMemberAccess(Expression.Constant(constant), constantType.GetProperty("Value"));
+        }
+
+        /// <summary>
+        /// 表示常量包装
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        private class Constant<T>
+        {
+            /// <summary>
+            /// 获取常量
+            /// </summary>
+            public T Value { get; }
+
+            /// <summary>
+            /// 常量包装
+            /// </summary>
+            /// <param name="value">常量</param>
+            public Constant(T value)
+            {
+                this.Value = value;
             }
         }
     }
