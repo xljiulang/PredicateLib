@@ -125,20 +125,19 @@ namespace PredicateLib
                 targetType = underlyingType;
             }
 
+            if (targetType.GetTypeInfo().IsEnum == true)
+            {
+                return Enum.Parse(targetType, value.ToString(), true);
+            }
+
             if (value is IConvertible convertible)
             {
                 return convertible.ToType(targetType, null);
             }
 
-            var valueString = value.ToString();
-            if (targetType.GetTypeInfo().IsEnum == true)
-            {
-                return Enum.Parse(targetType, valueString, true);
-            }
-
             if (typeof(Guid) == targetType)
             {
-                return Guid.Parse(valueString);
+                return Guid.Parse(value.ToString());
             }
 
             throw new NotSupportedException();
