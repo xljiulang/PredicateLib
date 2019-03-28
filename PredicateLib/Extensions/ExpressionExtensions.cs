@@ -19,12 +19,12 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, bool>> expRight)
         {
-            var candidateExpr = Expression.Parameter(typeof(T), Predicate.ParamterName);
-            var left = new ParameterReplacer(candidateExpr).Replace(expLeft.Body);
-            var right = new ParameterReplacer(candidateExpr).Replace(expRight.Body);
+            var parameter = Expression.Parameter(typeof(T), Predicate.ParamterName);
+            var left = new ParameterReplacer(parameter).Replace(expLeft.Body);
+            var right = new ParameterReplacer(parameter).Replace(expRight.Body);
 
             var body = Expression.AndAlso(left, right);
-            return Expression.Lambda<Func<T, bool>>(body, candidateExpr);
+            return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
 
         /// <summary>
@@ -36,12 +36,12 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<T, bool>> Or<T>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, bool>> expRight)
         {
-            var candidateExpr = Expression.Parameter(typeof(T), Predicate.ParamterName);
-            var left = new ParameterReplacer(candidateExpr).Replace(expLeft.Body);
-            var right = new ParameterReplacer(candidateExpr).Replace(expRight.Body);
+            var parameter = Expression.Parameter(typeof(T), Predicate.ParamterName);
+            var left = new ParameterReplacer(parameter).Replace(expLeft.Body);
+            var right = new ParameterReplacer(parameter).Replace(expRight.Body);
 
             var body = Expression.OrElse(left, right);
-            return Expression.Lambda<Func<T, bool>>(body, candidateExpr);
+            return Expression.Lambda<Func<T, bool>>(body, parameter);
         }
 
 
@@ -52,11 +52,11 @@ namespace System
         /// <param name="expLeft">表达式1</param>
         /// <param name="propertyName">属性名称</param>
         /// <param name="value">属性值</param>
-        /// <param name="op">操作符</param>
+        /// <param name="operator">操作符</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expLeft, string propertyName, object value, Operator op)
+        public static Expression<Func<T, bool>> And<T>(this Expression<Func<T, bool>> expLeft, string propertyName, object value, Operator @operator)
         {
-            var expRight = Predicate.Create<T>(propertyName, value, op);
+            var expRight = Predicate.Create<T>(propertyName, value, @operator);
             return expLeft.And(expRight);
         }
 
@@ -68,11 +68,11 @@ namespace System
         /// <param name="expLeft">表达式1</param>
         /// <param name="keySelector">属性选择</param>
         /// <param name="value">值</param>
-        /// <param name="op">操作符</param>
+        /// <param name="operator">操作符</param>
         /// <returns></returns>
-        public static Expression<Func<T, bool>> And<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, TKey value, Operator op)
+        public static Expression<Func<T, bool>> And<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, TKey value, Operator @operator)
         {
-            var expRight = Predicate.Create(keySelector, value, op);
+            var expRight = Predicate.Create(keySelector, value, @operator);
             return expLeft.And(expRight);
         }
 
@@ -87,7 +87,7 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<T, bool>> AndIn<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
-            var expRight = Predicate.CreateOrEqualPredicate(keySelector, values);
+            var expRight = Predicate.CreateOrEqual(keySelector, values);
             return expLeft.And(expRight);
         }
 
@@ -102,7 +102,7 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<T, bool>> AndNotIn<T, TKey>(this Expression<Func<T, bool>> expLeft, Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
-            var expRight = Predicate.CreateOrNotEqualPredicate(keySelector, values);
+            var expRight = Predicate.CreateOrNotEqual(keySelector, values);
             return expLeft.And(expRight);
         }
 
@@ -114,11 +114,11 @@ namespace System
         /// <returns></returns>
         public static Expression<Func<TNew, bool>> Cast<TNew>(this LambdaExpression expression)
         {
-            var candidateExpr = Expression.Parameter(typeof(TNew), Predicate.ParamterName);
-            var parameterReplacer = new ParameterReplacer(candidateExpr);
+            var parameter = Expression.Parameter(typeof(TNew), Predicate.ParamterName);
+            var parameterReplacer = new ParameterReplacer(parameter);
 
             var body = parameterReplacer.Replace(expression.Body);
-            return Expression.Lambda<Func<TNew, bool>>(body, candidateExpr);
+            return Expression.Lambda<Func<TNew, bool>>(body, parameter);
         }
 
         /// <summary>
