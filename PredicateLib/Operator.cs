@@ -39,19 +39,19 @@ namespace PredicateLib
 
         /// <summary>
         /// 包含
-        /// like '%{value}%'
+        /// 只适用于string类型的属性
         /// </summary>
         Contains,
 
         /// <summary>
         /// 结束于
-        /// like '%{value}'
+        /// 只适用于string类型的属性
         /// </summary>
         EndWith,
 
         /// <summary>
         /// 开始于
-        /// like '{value}%'
+        /// 只适用于string类型的属性
         /// </summary>
         StartsWith
     }
