@@ -38,6 +38,7 @@ namespace PredicateLib
         /// 查询条件
         /// </summary>
         /// <param name="conditionItems">查询条件项</param>
+        /// <exception cref="NotSupportedException"></exception>
         public Condition(IEnumerable<ConditionItem> conditionItems)
             : this(conditionItems.Select(item => item.AsGeneric<T>()))
         {
@@ -92,9 +93,21 @@ namespace PredicateLib
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
         /// <param name="keySelector">属性选择</param>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
         public Condition<T> IgnoreFor<TKey>(Expression<Func<T, TKey>> keySelector)
         {
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+
+            if (keySelector.Body.NodeType != ExpressionType.MemberAccess)
+            {
+                throw new ArgumentException("要求表达式主体必须为MemberAccess表达式", nameof(keySelector));
+            }
+
             var exp = keySelector.Body as MemberExpression;
             var targets = this.Items.Where(item => item.Member == exp.Member).ToArray();
             foreach (var item in targets)
@@ -110,9 +123,21 @@ namespace PredicateLib
         /// <typeparam name="TKey"></typeparam>
         /// <param name="keySelector">属性选择</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <returns></returns>
         public Condition<T> OperatorFor<TKey>(Expression<Func<T, TKey>> keySelector, Operator @operator)
         {
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+
+            if (keySelector.Body.NodeType != ExpressionType.MemberAccess)
+            {
+                throw new ArgumentException("要求表达式主体必须为MemberAccess表达式", nameof(keySelector));
+            }
+
             var exp = keySelector.Body as MemberExpression;
             foreach (var item in this.Items)
             {

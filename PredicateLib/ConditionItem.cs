@@ -29,7 +29,7 @@ namespace PredicateLib
         /// 转换为泛型的ConditionItem
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public ConditionItem<T> AsGeneric<T>()
         {
@@ -86,6 +86,7 @@ namespace PredicateLib
         /// <param name="value">条件值</param>
         /// <param name="operator">比较操作符</param>
         /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
         public ConditionItem(PropertyInfo member, object value, Operator? @operator)
         {
             this.Member = member ?? throw new ArgumentNullException(nameof(member));
@@ -151,6 +152,7 @@ namespace PredicateLib
         /// <summary>
         /// 转换为谓词筛选表达式
         /// </summary>
+        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public Expression<Func<T, bool>> ToPredicate()
         {

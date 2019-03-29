@@ -65,9 +65,24 @@ namespace PredicateLib
         /// <typeparam name="TKey">属性类型</typeparam>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateOrEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+            if (values.Any() == false)
+            {
+                throw new ArgumentOutOfRangeException(nameof(values));
+            }
+
             var parameter = keySelector.Parameters.Single();
             var expressions = values.Select(value => (Expression)Expression.Equal(keySelector.Body, ConstantExpression(value, typeof(TKey))));
             var body = expressions.Aggregate((left, right) => Expression.OrElse(left, right));
@@ -82,9 +97,24 @@ namespace PredicateLib
         /// <typeparam name="TKey">>属性类型</typeparam>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateAndNotEqual<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+            if (values.Any() == false)
+            {
+                throw new ArgumentOutOfRangeException(nameof(values));
+            }
+
             var parameter = keySelector.Parameters.Single();
             var expressions = values.Select(value => (Expression)Expression.NotEqual(keySelector.Body, ConstantExpression(value, typeof(TKey))));
             var body = expressions.Aggregate((left, right) => Expression.AndAlso(left, right));
@@ -98,11 +128,26 @@ namespace PredicateLib
         /// <typeparam name="TKey">属性类型</typeparam>
         /// <param name="keySelector">属性选择</param>
         /// <param name="values">包含的值</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> CreateContains<T, TKey>(Expression<Func<T, TKey>> keySelector, IEnumerable<TKey> values)
         {
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+            if (values.Any() == false)
+            {
+                throw new ArgumentOutOfRangeException(nameof(values));
+            }
+
             var method = containsMethod.MakeGenericMethod(typeof(TKey));
-            var body = Expression.Call(null, method, ConstantExpression(values, typeof(IEnumerable<TKey>)), keySelector.Body);
+            var body = Expression.Call(null, method, Expression.Constant(values, typeof(IEnumerable<TKey>)), keySelector.Body);
             var parameter = keySelector.Parameters.Single();
             return Expression.Lambda(body, parameter) as Expression<Func<T, bool>>;
         }
@@ -134,10 +179,15 @@ namespace PredicateLib
         /// <param name="member">属性成员</param>
         /// <param name="value">值</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T>(MemberInfo member, object value, Operator @operator)
         {
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
             var parameter = Expression.Parameter(typeof(T), ParamterName);
             var memberExpression = Expression.MakeMemberAccess(parameter, member);
             return Create<T>(parameter, memberExpression, value, @operator);
@@ -151,11 +201,21 @@ namespace PredicateLib
         /// <param name="keySelector">属性选择</param>
         /// <param name="value">值</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T, TKey>(Expression<Func<T, TKey>> keySelector, TKey value, Operator @operator)
         {
-            return Create<T>(keySelector.Parameters.First(), (MemberExpression)keySelector.Body, value, @operator);
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+            if (keySelector.Body.NodeType != ExpressionType.MemberAccess)
+            {
+                throw new ArgumentException("要求表达式主体必须为MemberAccess表达式", nameof(keySelector));
+            }
+            return Create<T>(keySelector.Parameters.Single(), (MemberExpression)keySelector.Body, value, @operator);
         }
 
         /// <summary>
@@ -166,10 +226,19 @@ namespace PredicateLib
         /// <param name="member">成员表达式</param>
         /// <param name="value">属性值</param>
         /// <param name="operator">操作符</param>
+        /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
         public static Expression<Func<T, bool>> Create<T>(ParameterExpression parameter, MemberExpression member, object value, Operator @operator)
         {
+            if (parameter == null)
+            {
+                throw new ArgumentNullException(nameof(parameter));
+            }
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
             switch (@operator)
             {
                 case Operator.Contains:
