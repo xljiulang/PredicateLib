@@ -37,11 +37,13 @@ namespace PredicateLib
         /// </summary>
         LessThan = ExpressionType.LessThan,
 
+
+
         /// <summary>
         /// 包含
         /// 只适用于string类型的属性
         /// </summary>
-        Contains,
+        Contains = 1000,
 
         /// <summary>
         /// 结束于
